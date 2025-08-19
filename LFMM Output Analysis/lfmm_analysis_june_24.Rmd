@@ -1,0 +1,395 @@
+---
+title: "LFMM analysis"
+author: "Isabel Bojanini"
+date: "2025-06-24"
+output: html_document
+---
+
+```{r}
+library(LEA)
+library(dplyr)
+library(ggplot2)
+```
+
+## R Markdown
+Load all data
+```{r cars}
+
+#RDS
+temp_pcs=readRDS("/scratch/ib2382/GEA/June_lfmm_804/K6/june_27_output2.rds")
+prec_pcs=readRDS("/scratch/ib2382/GEA/June_lfmm_804/K6/june_27_output1.rds")
+temp6=readRDS("/scratch/ib2382/GEA/June_lfmm_804/K6/july_3rd2.rds") #PET
+
+
+#Clumps
+temp_pcs=read.csv("clumped_temp_pcs.csv")
+temp6=read.csv("clumped_temp6.csv")
+prec_pcs=read.csv("clumped_prec_pcs.csv")
+water_pcs=read.csv("clumped_water_pcs.csv")
+```
+
+Quality control:
+
+
+```{r pressure, echo=FALSE}
+
+# Open a PNG file for the multi-panel plot
+png("/scratch/ib2382/GEA/June_lfmm_804/K6/qc_histogram_qqplot.png", width = 700, height = 1500)
+
+# Set up a 2x2 plotting area
+par(mfrow = c(8, 2))
+
+project_list=c("prec_pcs", "temp_pcs","moisture_pcs","temp6")
+for (proj_name in project_list) {
+  project_data <- get(proj_name)
+  hist(project_data$pvalues, main = paste("Unadjusted p-values:", proj_name))
+  qqplot(rexp(length(project_data$pvalues),rate=log(10)),
+         -log10(project_data$pvalues),xlab=paste("Expected quantile",proj_name))
+  abline(0,1)
+}
+
+# Turn off plotting device
+dev.off()
+```
+
+This code chunk generates 2 data frames: FDR adjusted p.values and z.scores
+```{r}
+project_list=c("prec_pcs", "temp_pcs","temp6")
+q.values_list=c()
+for (project in project_list){
+  project_data <- get(project)
+  #print(project_data)
+  q.values_list[[project]]=p.adjust(project_data$pvalues, method="fdr")
+}
+q.values=as.data.frame(q.values_list)
+
+z.scores_list=c()
+for (project in project_list){
+  project_data <- get(project)
+  #print(project_data)
+  z.scores_list[[project]]=project_data$zscores
+}
+z.scores=as.data.frame(z.scores_list)
+```
+
+Making a chromosome table:
+```{r}
+snp_maf_table = read.table("/scratch/ib2382/plink_indica_mac_geno_imp_804_005.bim", header=FALSE)
+library(dplyr)
+snp_maf_table = snp_maf_table %>% dplyr::select(V1,V4)
+
+nrow(snp_maf_table)
+
+snp_maf_table$SNP= paste0("Os", 1:nrow(snp_maf_table))
+
+colnames(snp_maf_table)=c("CHROM", "POS","SNP")
+
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018157.1"]<-1
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018158.1"]<-2
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018159.1"]<-3
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018160.1"]<-4
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018161.1"]<-5
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018162.1"]<-6
+
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018163.1"]<-7
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018164.1"]<-8
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018165.1"]<-9
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018166.1"]<-10
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018167.1"]<-11
+snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018168.1"]<-12
+
+snp_maf_table$CHROM <- as.numeric(snp_maf_table$CHROM)
+
+q.value.snp=cbind(snp_maf_table,q.values)
+q.value.snp$CHROM=as.numeric(q.value.snp$CHROM)
+q.value.snp$POS=as.numeric(q.value.snp$POS)
+z.value.snp=cbind(snp_maf_table,z.scores)
+write.csv(q.value.snp,"/scratch/ib2382/GEA/June_lfmm_804/K6/qvalueslfmm.csv")
+write.csv(z.value.snp,"/scratch/ib2382/GEA/June_lfmm_804/K6/zscoreslfmm.csv")
+
+```
+
+Getting the significant values:
+```{r}
+temp0.05=q.value.snp[which(q.value.snp$temp_pcs< 0.05), ]
+prec0.05=q.value.snp[which(q.value.snp$prec_pcs< 0.05), ]
+temp60.05=q.value.snp[which(q.value.snp$temp6< 0.05), ]
+
+
+temp0.01=q.value.snp[which(q.value.snp$temp_pcs< 0.01), ]
+prec0.01=q.value.snp[which(q.value.snp$prec_pcs< 0.01), ]
+temp60.01=q.value.snp[which(q.value.snp$temp6< 0.01), ]
+
+```
+
+manhattan plots
+```{r}
+install.packages("remotes")
+remotes::install_github("leejs-abv/ggmanh")
+
+library(ggmanh) 
+library(qqman)
+q.value.snp=read.csv("/scratch/ib2382/GEA/June_lfmm_804/K6/qvalueslfmm.csv")
+# Define alternating chromosome colors
+chr_colors <- c("black", "azure4")
+
+# Convert CHROM to factor
+q.value.snp$CHROM <- factor(q.value.snp$CHROM, c(1:12))
+
+# Assign alternating colors and highlight significant SNPs
+snp_table <- q.value.snp %>%
+  mutate(chr_color = ifelse(as.numeric(CHROM) %% 2 == 0,"black", "azure4"),
+         plot_color =  chr_color)
+         #plot_color = ifelse(temp6 <= 0.05, "brown2", chr_color))  # Adjust significance as needed
+
+# Define color mapping
+highlight_colormap <- c("black" = "black", 
+                        "azure4" = "azure4", 
+                        "brown2" = "brown2")
+
+# Preprocess data for Manhattan plot
+tmp <- manhattan_data_preprocess(
+  snp_table, pval.colname = "water_pcs", chr.colname = "CHROM", pos.colname = "POS",
+  highlight.colname = "plot_color", highlight.col = highlight_colormap,
+  signif = c(0.01,0.05)
+)
+
+
+# Generate Manhattan plot with custom threshold line
+g <- manhattan_plot(
+  tmp, plot.title = "Water balance variables PC1",
+  color.by.highlight = TRUE,
+  signif = c(0.01,0.05))
+q <- g +
+  geom_hline(yintercept = -log10(0.01), color = "red", linetype = "dashed", linewidth = 0.5) +
+  geom_hline(yintercept = -log10(0.05), color = "blue", linetype = "dashed", linewidth = 0.5)+
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+
+#Save the plots
+png("/scratch/ib2382/GEA/June_lfmm_804/K6/water_pcs.png", width = 1200, height = 800, res = 150)
+
+# Print the updated plot into the PNG device
+print(q)
+
+# Close the PNG device to write the file
+dev.off()
+```
+#Getting peaks
+the dataframe "boundaries" should give a table with the most significant snp, and its position. As well as the peak size, start and end position. 
+Note: Ornob created this script. I just tweaked a few lines.
+```{r}
+library(dplyr) #to subset and mutate columns as we go
+
+# These are your q.value columns (environmental variables)
+qval_columns = c(colnames(q.values))  #or replace with your actual q.value column names
+
+# Create a list to store results
+clumped_results <- list()
+
+# Loop through each q.value column. You set this up in a previous line
+for (var in qval_columns) {
+  
+  # Filter SNPs where q.value < 0.01
+  filtered <- q.value.snp %>%
+    filter(.data[[var]] < 1e-2) %>%
+    arrange(CHROM, POS)  # Make sure it's sorted, we will use this to create "chains"
+  
+  if (nrow(filtered) > 0) {
+    # Initialize chain vector
+    chain <- rep(1, nrow(filtered))
+    
+    # Loop to assign chain groups
+    for (i in 2:nrow(filtered)) {
+      if (filtered$CHROM[i] != filtered$CHROM[i - 1] ||
+          filtered$POS[i] - filtered$POS[i - 1] > 200000) {
+        chain[i] = chain[i - 1] + 1
+      } else {
+        chain[i] = chain[i - 1]
+      }
+    }
+    
+    # Add the chain column
+    filtered$chain = chain
+  } else {
+    filtered$chain = integer(0)
+  }
+  
+  # Save the result
+  clumped_results[[var]] = filtered
+}
+for (var in names(clumped_results)) {
+  write.csv(clumped_results[[var]], paste0("clumped_", var, ".csv"), row.names = FALSE)
+}
+
+```
+
+Finding peak based on the previously found "clumps"
+```{r}
+get_boundaries=function(df,column){
+  boundaries2 <- df %>%
+    group_by(chain) %>%
+    mutate(
+      sig_SNP = min(.data[[column]]),  # variable is the name of the q.value column
+      sig_SNP_POS = POS[which.min(.data[[column]])],
+      sig_SNP_name = SNP[which.min(.data[[column]])],
+      peak_start = min(POS),
+      peak_end = max(POS)
+    ) %>%
+    distinct(chain, .keep_all = TRUE) %>%
+    mutate(size = peak_end - peak_start)
+  return(boundaries2)
+}
+
+boundaries_temp=get_boundaries(temp_pcs, "temp_pcs")
+boundaries_prec=get_boundaries(prec_pcs, "prec_pcs")
+boundaries_temp6=get_boundaries(temp6, "temp6")
+boundaries_water=get_boundaries(water_pcs, "water_pcs")
+#write.csv(boundaries_temp, "boundaries_temp.csv")
+#write.csv(boundaries_prec, "boundaries_prec.csv")
+#write.csv(boundaries_temp6, "boundaries_temp6.csv")
+#write.csv(boundaries_water, "boundaries_water.csv")
+```
+
+#Check for peaks that could be near too near others
+```{r}
+peak_distance_test=boundaries_temp %>% 
+  group_by(CHROM) %>% 
+  mutate(distance_between=peak_start-lag(peak_end))
+
+peak_distance_test$distance_between<"200000" #they should all be false
+```
+To annotate the peaks:
+
+This next part is to merge your data with GFF files:
+```{r}
+library(dplyr )
+gff_os=read.table("/scratch/ib2382/GEA/renameno_soil_806_lfmm_analysis/R498_IGDBv3_coreset/R498_IGDBv3_coreset.gff")
+
+
+gff_V1=gff_os %>% 
+  mutate(V1=case_when(
+    V1=="Chr1" ~ "1",
+    V1=="Chr2" ~ "2",
+    V1=="Chr3" ~ "3",
+    V1=="Chr4" ~ "4",
+    V1=="Chr5" ~ "5",
+    V1=="Chr6" ~ "6",
+    V1=="Chr7" ~ "7",
+    V1=="Chr8" ~ "8",
+    V1=="Chr9" ~ "9",
+    V1=="Chr10" ~ "10",
+    V1=="Chr11" ~ "11",
+    V1=="Chr12" ~ "12"))
+
+
+colnames(gff_V1)=c("CHROM","source","feature","start","end","score","strand","frame","descriptor")
+
+```
+ 
+Files to make the conversion from Shuhui to nipponbare 
+```{r}
+shuAnno = read.delim("/scratch/ib2382/GEA/renameno_soil_806_lfmm_analysis/R498_IGDBv3_coreset/R498_IGDBv3_coreset_MSU.anno",header=FALSE,col.names = c("ID","LOC","func"))
+
+```
+
+```{r}
+not_all_na <- function(x) any(!is.na(x))
+
+nipAnno = read.csv("/scratch/ib2382/GEA/renameno_soil_806_lfmm_analysis/annotation_files/RAP-MSU_2024-01-11.txt",header=FALSE,col.names =paste0("V",1:100)) %>%
+  dplyr::select(where(not_all_na)) %>% 
+  separate(col = V1,into = c("ID","V1"),sep = "\t") %>%
+  tidyr::pivot_longer(cols = paste0("V",1:(ncol(.)-1))) %>%
+  dplyr::select(ID,value) %>%
+  dplyr::filter(str_count(value) > 1, value != "None") %>%
+  dplyr::filter(ID != "None") %>%
+  separate(col = value, into = c("LOC","remove"),remove = FALSE,sep = "\\.") %>%
+  dplyr::select(!remove) %>%
+  dplyr::select(ID,LOC) %>% unique()
+```
+
+```{r}
+read_gff = function(filename){
+  
+  not_all_na <- function(x) any(!is.na(x))
+  
+  gff = read.delim(filename,sep = ";",header=FALSE,col.names =paste0("V",1:100) ) %>% dplyr::select(where(not_all_na)) %>%
+  separate(col = V1, into = c("seqname","source","feature","start","end",
+                              "score","strand","frame","V1"),sep = "\t")
+  
+  nv = ncol(gff) - 8
+  gff = gff %>% tidyr::pivot_longer(cols = paste0("V",1:nv)) %>%
+  separate(col = value, into = c("field","value"),sep = "=") %>%
+    dplyr::select(-name) %>%
+    dplyr::filter(!is.na(value)) %>% pivot_wider(names_from = "field")
+  return(gff)
+}
+```
+
+```{r}
+nipLociRep = read_gff("/scratch/ib2382/GEA/renameno_soil_806_lfmm_analysis/annotation_files/locus.gff")
+shuLoci = read_gff("/scratch/ib2382/GEA/renameno_soil_806_lfmm_analysis/annotation_files/R498_genes.gff")
+nipCuratedRep = read.delim("/scratch/ib2382/GEA/renameno_soil_806_lfmm_analysis/annotation_files/IRGSP-1.0_representative_annotation_2024-01-11.tsv",sep="\t",header=TRUE)
+
+traitOncology = read.delim("/scratch/ib2382/GEA/renameno_soil_806_lfmm_analysis/annotation_files/results.tsv") %>%
+  dplyr::select(Locus.ID,Trait.Ontology..TO.)
+colnames(traitOncology) = c("Locus_ID","Trait_Oncology")
+nipCuratedRep = dplyr::left_join(nipCuratedRep,traitOncology)
+```
+
+Then, do left_joins with your OsR498 IDs of interest
+
+First map to the LOC number for the gene, then using the LOC number, map to the Nipponbare annotations
+```{r}
+
+extract_os_word <- function(x) {
+  # Split the string by both semicolons and "ID="
+  components <- unlist(strsplit(x, ";|ID=|Parent="))  
+  os_word <- components[grep("Os", components)]  # Find components that start with "Os"
+  if (length(os_word) > 0) {
+    return(os_word[1])  # Return the first match if there are any matches
+  } else {
+    return(NA)  # Return NA if no matches are found
+  }
+}
+
+merge_to_annotate=function(boundaries){
+  gff_temp_boundaries=merge(boundaries, gff_V1, by = "CHROM")
+  merged_temp_gff_peaks<- gff_temp_boundaries %>%
+    filter(start >= peak_start & end <= peak_end)
+  merged_gff_peaks_os=merged_temp_gff_peaks %>%
+    mutate(ID  = sapply(descriptor, extract_os_word))
+  shuAnno_snps=merge(merged_gff_peaks_os,shuAnno, by="ID")
+  shuhui_snps=merge(shuAnno_snps,nipAnno, by= "LOC")
+  names(shuhui_snps)[28] <- "Locus_ID" 
+  total_boundary_genelist=merge(shuhui_snps,nipCuratedRep, by= "Locus_ID")
+  return(total_boundary_genelist)
+}
+
+boundaries_prec=read.csv( "boundaries_prec.csv")
+boundaries_temp=read.csv( "boundaries_temp.csv")
+boundaries_temp6=read.csv( "boundaries_temp6.csv")
+boundaries_water=read.csv( "boundaries_water.csv")
+
+precipitation_annotations=merge_to_annotate(boundaries_prec)
+temperature_annotations=merge_to_annotate(boundaries_temp)
+evapotranspiration_annotations=merge_to_annotate(boundaries_temp6)
+water_balance_annotations=merge_to_annotate(boundaries_water)
+
+write.csv(water_balance_annotations, "water_balance_annotations.csv")
+
+precipitation_annotations=read.csv( "precipitation_annotations.csv")
+temperature_annotations=read.csv( "temperature_annotations.csv")
+evapotranspiration_annotations=read.csv( "evapotranspiration_annotations.csv")
+water_balance_annotations=read.csv( "water_balance_annotations.csv")
+#input for orthofinder:
+#orthofinder_input=merged_gff_peaks_os %>% 
+#  select(-c(X,POS,SNP,temp,prec,evapo,z.temp,z.prec,z.evapo,score,strand,frame)) %>% 
+#  filter(feature=="gene")
+#write.csv(orthofinder_input, "total_boundary_genelist_annotations.csv")
+```
+Frequency of specific snps
+
+```{r}
+plink_file=read.delim("/scratch/ib2382/plink_indica_mac_geno_imp_804_005_freq.afreq")
+```
+
