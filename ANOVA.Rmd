@@ -1,0 +1,141 @@
+---
+title: "ANOVA-LDA"
+author: "Isabel Bojanini"
+date: "2025-08-18"
+output: html_document
+---
+
+
+## Introduction
+
+For GEA analyses to have sufficient power, the populations should inhabit different environments. In this study, we are testing the hypothesis that our individuals are locally adapted to their environments. Are the environment these populations inhabit in fact different?
+
+#1. Load data and libraries.
+Note: the environmental database 
+```{r}
+library(dplyr)
+library(MASS)
+library(tidyr)
+library(ggplot2)
+env_database=read.csv("environmental-data/environment_coordinates_database.csv")
+pc1.temperature=read.table("environmental-data/June_27_2.env", col.names = "tempPC1")
+pc1.precipitation=read.table("environmental-data/June_27_1.env", col.names = "precPC1")
+pc_database=data.frame(cbind(IRGC_ID=env_database$IRGC_ID,
+                             K6=env_database$K6,
+                             precPC1=pc1.precipitation$precPC1,
+                             tempPC1=pc1.temperature$tempPC1,
+                             PET=env_database$temp6))
+
+pc_database$precPC1=as.numeric(pc_database$precPC1)
+pc_database$tempPC1=as.numeric(pc_database$tempPC1)
+pc_database$PET=as.numeric(pc_database$PET)
+```
+
+#1.5 Visualizing the data (change based on which values you want to display)
+
+```{r pressure, echo=FALSE}
+
+counts <- pc_database %>%
+  group_by(K6) %>%
+  summarise(n = n(), .groups = "drop")
+
+#rename groups
+group_labels <- c("Bangladesh" = "Bangladesh", "Cambodia" = "Mainland\nSEA 1", 
+                  "China" = "China","India" = "India",
+                  "Indonesia" = "Island\nSEA", "Thailand" = "Mainland\nSEA 2", 
+                  "no_group" = "No group")
+
+p=ggplot(pc_database, aes(x = K6, y = PET, color = K6)) + 
+  geom_violin() + 
+  geom_jitter() +
+  # Add counts (n) above each violin
+  geom_text(data = counts, 
+            aes(x = K6, 
+                y = max(pc_database$PET), 
+                label = paste0("n=", n)),
+            inherit.aes = FALSE) + 
+  labs(title = "Distribution of Potential Evapotranspiration (PET)\nValues by Population",
+       x = "Population group",
+       y = "PET (kg m-2 month -1",
+       color="Population group")  +# legend title changed here
+  scale_color_manual(values = c("Bangladesh" = "#440154FF",
+                                "Cambodia"   = "#482878FF",
+                                "China"      = "#3E4A89FF",
+                                "Indonesia"  = "#2E6E8EFF",
+                                "India"      = "#21908CFF",
+                                "Thailand"   = "#5DC863FF",
+                                "no_group"   = "#FDE725FF"),
+                     labels = group_labels)+
+  scale_x_discrete(labels = group_labels) +
+  theme_classic() +
+  theme(panel.border = element_rect(colour = "black", fill = NA),
+        plot.title = element_text(hjust = 0.5, size = 15, face = "bold"))
+
+
+ggsave("PET_violin_plot.pdf", p, width = 6.7, height = 4.5, dpi = 600)
+print(p)
+dev.off()
+```
+#2. Quality control of the data.
+
+This will help determine if I should use ANOVA or a non-parametric test:\n
+Tests for normality: I will use a shapiro test for normality to assess if these data are normal, since this is an assumption of ANOVA.\n
+I will check for normality, and equal variance in the environmental values for all populations\n
+If the null hypothesis for barletts test is rejected, that means there is a significant difference in variance values across groups.
+
+
+```{r}
+#Barlett's tests for homoscedasticity:
+temp.barlett=bartlett.test(tempPC1 ~ K6, data=pc_database) #p.value <0.05
+prec.barlett=bartlett.test(precPC1 ~ K6, data=pc_database)#p.value <0.05
+pet.barlett=bartlett.test(PET ~ K6, data=pc_database)#p.value <0.05
+
+#Shapiro test for normality:
+temp.shapiro=by(pc_database$tempPC1, pc_database$K6, shapiro.test) #p.value <0.05
+prec.shapiro=by(pc_database$precPC1, pc_database$K6, shapiro.test) #p.value <0.05
+pet.shapiro=by(pc_database$PET, pc_database$K6, shapiro.test) #p.value <0.05
+```
+#3.Non-parametric test similar to ANOVA
+
+```{r}
+
+kruskal.test(precPC1 ~ K6, data = pc_database)
+pairwise.wilcox.test(pc_database$precPC1, pc_database$K6, p.adjust.method = "fdr")
+
+kruskal.test(tempPC1 ~ K6, data = pc_database)
+pairwise.wilcox.test(pc_database$tempPC1, pc_database$K6, p.adjust.method = "fdr")
+
+kruskal.test(PET ~ K6, data = pc_database)
+pairwise.wilcox.test(pc_database$PET, pc_database$K6, p.adjust.method = "fdr")
+```
+#3.5 perMANOVA
+
+```{r}
+library(pairwiseAdonis)
+library(vegan)
+#Compute distance matrix
+dist_mat <- dist(pc_database$PET, method = "euclidean")  # Euclidean distance
+
+#Overall PERMANOVA ---
+perm_test <- adonis2(dist_mat ~ K6, data = pc_database, permutations = 999)
+print(perm_test)
+
+#Pairwise PERMANOVA ---
+pairwise_test <- pairwise.adonis(x = dist_mat,
+                                 factors = pc_database$K6,
+                                 sim.method = 'euclidean',
+                                 p.adjust.m = 'holm')  # Holm correction for multiple testing
+#Do the same with precipitation and temperature
+
+# For precipitation PC1
+dist_prec <- dist(pc_database$precPC1, method = "euclidean")
+adonis2(dist_prec ~ K6, data = pc_database, permutations = 999)
+pairwise.adonis(dist_prec, factors = pc_database$K6, sim.method = 'euclidean', p.adjust.m='holm')
+
+# For temperature PC1
+dist_temp <- dist(pc_database$tempPC1, method = "euclidean")
+adonis2(dist_temp ~ K6, data = pc_database, permutations = 999)
+pairwise.adonis(dist_temp, factors = pc_database$K6, sim.method = 'euclidean', p.adjust.m='holm')
+
+```
+Overall, this shows that the populations are in fact significantly different in their environmental values. BUT we need to check the pairwise comparisons more closely. 

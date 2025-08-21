@@ -1,0 +1,365 @@
+---
+title: "Fst"
+author: "Isabel Bojanini"
+date: "2025-01-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+This is the code I used to create the files below. Isaura shared this script. 
+```{bash}
+#!/bin/bash
+
+module load vcftools/intel/0.1.16
+
+for i in bangladesh cambodia china india indonesia thailand; do
+
+vcftools --vcf indica_804_mac_geno_imp005.vcf \
+         --weir-fst-pop ${i}_pop.txt \
+         --weir-fst-pop all_not_${i}_pop.txt \
+         --out ${i}_vs_all_not_${i}
+```
+
+## Files to load
+
+```{r cars}
+bangladesh=read.table(file = "bangladesh_vs_all_not_50kstepbangladesh.windowed.weir.fst", header = T)
+
+
+bangladesh=bangladesh[,c(1:3,6)]
+colnames(bangladesh)=c("CHROM","BIN_START", "BIN_END","Bangladesh_meanFST")
+
+thailand=read.table(file = "thailand_vs_all_not_50kstepthailand.windowed.weir.fst", header = T)
+thailand=thailand[,c(1:3,6)]
+colnames(thailand)=c("CHROM","BIN_START", "BIN_END","Thailand_meanFST")
+
+india=read.table(file = "india_vs_all_not_50kstepindia.windowed.weir.fst", header = T)
+india=india[,c(1:3,6)]
+colnames(india)=c("CHROM","BIN_START", "BIN_END","India_meanFST")
+
+indonesia=read.table(file = "indonesia_vs_all_not_50kstepindonesia.windowed.weir.fst", header = T)
+indonesia=indonesia[,c(1:3,6)]
+colnames(indonesia)=c("CHROM","BIN_START", "BIN_END","Indonesia_meanFST")
+
+china=read.table(file = "china_vs_all_not_50kstepchina.windowed.weir.fst", header = T)
+china=china[,c(1:3,6)]
+colnames(china)=c("CHROM","BIN_START", "BIN_END","China_meanFST")
+
+cambodia=read.table(file = "cambodia_vs_all_not_50kstepcambodia.windowed.weir.fst", header = T)
+cambodia=cambodia[,c(1:3,6)]
+colnames(cambodia)=c("CHROM","BIN_START", "BIN_END","Cambodia_meanFST")
+
+
+#total_list_snps=read.csv(file="lfmm_804_analysis/total_list_peaks_sig001.csv")
+temp_sig_001=read.csv(file="lfmm_804_analysis/temp0.01.csv")
+temp_sig_001$variable="temperature"
+temp_sig_001$q.value=temp_sig_001$temp
+temp_sig_001=temp_sig_001[,c(2:4,11,12)]
+prec_sig_001=read.csv(file="lfmm_804_analysis/prec0.01.csv")
+prec_sig_001$variable="precipitation"
+prec_sig_001$q.value=prec_sig_001$prec
+prec_sig_001=prec_sig_001[,c(2:4,11,12)]
+evapo_sig_001=read.csv(file="lfmm_804_analysis/evapo0.01.csv")
+evapo_sig_001$variable="evapotranspiration"
+evapo_sig_001$q.value=evapo_sig_001$evapo
+evapo_sig_001=evapo_sig_001[,c(2:4,11,12)]
+
+sig_snps_001_200window=rbind(temp_sig_001,prec_sig_001,evapo_sig_001)
+#write.csv(sig_snps_001_200window, "sig_snps_001_200window.csv")
+#temp_sig_005$variable="temperature"
+#prec_sig_005=read.csv(file="lfmm_804_analysis/prec_005_200window_boundaries.csv")
+#prec_sig_005$variable="precipitation"
+#evapo_sig_005=read.csv(file="lfmm_804_analysis/evapo_005_200window_boundaries.csv")
+#evapo_sig_005$variable="evapotranspiration"
+
+#total_snps_005_200window=rbind(temp_sig_005,prec_sig_005,evapo_sig_005)
+#write.csv(total_snps_005_200window, "total_snps_005_200window.csv")
+
+```
+
+```{r}
+bangladesh=read.table(file = "bangladesh_vs_all_not_bangladesh.weir.fst", header = T)
+colnames(bangladesh)=c("CHROM","POS","Bangladesh_meanFST")
+
+thailand=read.table(file = "thailand_vs_all_not_thailand.weir.fst", header = T)
+colnames(thailand)=c("CHROM","POS", "Thailand_meanFST")
+
+india=read.table(file = "india_vs_all_not_india.weir.fst", header = T)
+colnames(india)=c("CHROM","POS","India_meanFST")
+
+indonesia=read.table(file = "indonesia_vs_all_not_indonesia.weir.fst", header = T)
+colnames(indonesia)=c("CHROM","POS","Indonesia_meanFST")
+
+china=read.table(file = "china_vs_all_not_china.weir.fst", header = T)
+colnames(china)=c("CHROM","POS","China_meanFST")
+
+cambodia=read.table(file = "cambodia_vs_all_not_cambodia.weir.fst", header = T)
+colnames(cambodia)=c("CHROM","POS","Cambodia_meanFST")
+
+```
+
+## data manipulation
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+total_snps_005_200window=read.csv("total_snps_005_200window.csv")
+total_snps_005_200window$X.1=NULL
+total_snps_005_200window$X=NULL
+library(dplyr)
+#SNPs=sig_snps_001_200window %>%
+#  select(CHROM,variable,POS,q.value)
+
+pop_fst=china %>% 
+  merge(cambodia) %>% 
+  merge(india) %>% 
+  merge(thailand) %>% 
+  merge(indonesia) %>% 
+  merge(bangladesh)
+
+pop_fst$CHROM[pop_fst$CHROM=="CP018157.1"]<-1
+pop_fst$CHROM[pop_fst$CHROM=="CP018158.1"]<-2
+pop_fst$CHROM[pop_fst$CHROM=="CP018159.1"]<-3
+pop_fst$CHROM[pop_fst$CHROM=="CP018160.1"]<-4
+pop_fst$CHROM[pop_fst$CHROM=="CP018161.1"]<-5
+pop_fst$CHROM[pop_fst$CHROM=="CP018162.1"]<-6
+pop_fst$CHROM[pop_fst$CHROM=="CP018163.1"]<-7
+pop_fst$CHROM[pop_fst$CHROM=="CP018164.1"]<-8
+pop_fst$CHROM[pop_fst$CHROM=="CP018165.1"]<-9
+pop_fst$CHROM[pop_fst$CHROM=="CP018166.1"]<-10
+pop_fst$CHROM[pop_fst$CHROM=="CP018167.1"]<-11
+pop_fst$CHROM[pop_fst$CHROM=="CP018168.1"]<-12
+pop_fst$CHROM=as.integer(pop_fst$CHROM)
+sig_snp_fst=inner_join(pop_fst, sig_snps_001_200window, by=c("CHROM","POS"))
+#write.csv(pop_fst, "fst_allSNP_pop50Kstep.csv")
+#write.csv(sig_snp_fst, "fst_for_significant_snps.csv")
+
+```
+## Visualizing the data. I will do a heatmap to visualize Fst across populations and associated SNPs.
+```{r}
+#Libraries
+library("reshape2")
+library("ggplot2")
+library("viridis")
+library("dplyr")
+
+#Load the data
+sig_snp_fst=read.csv("fst_for_significant_snps.csv")
+sig_snp_fst$X=NULL
+
+#copy_sig_snp_fst=sig_snp_fst
+colnames(sig_snp_fst)=c("CHROM","POS","China","Cambodia", "India", "Thailand","Indonesia", "Bangladesh", "SNP", "variables","q.value" )
+#Temperature
+temp_fst=sig_snp_fst %>% 
+  filter(variables=="temperature") %>% 
+  select(-c(CHROM,variables,q.value))
+
+
+# Reshape data for heatmap
+
+library(tidyr)
+temp_melted= temp_fst %>%
+  pivot_longer(
+    cols = c(Bangladesh, China, Cambodia,India,Indonesia, Thailand),
+    names_to = "Var1",
+    values_to = "FST"
+  ) %>%
+  rename(Var2 = POS) 
+temp_melted$Var2= paste0("Os_",temp_melted$Var2)
+
+temp_melted <- temp_melted %>%
+  group_by(Var2) %>%
+  mutate(mean_FST_pop = mean(FST)) %>%
+  arrange(mean_FST_pop) %>%
+  ungroup() %>%
+  mutate(Var2 = factor(Var2, levels = unique(Var2)))
+
+############ PRECIPITATION ##################
+
+prec_fst=sig_snp_fst %>% 
+  filter(variables=="precipitation") %>% 
+  select(-c(CHROM,variables,q.value))
+
+# Reshape data for heatmap
+
+prec_melted= prec_fst %>%
+  pivot_longer(
+    cols = c(Bangladesh, China, Cambodia,India,Indonesia, Thailand),
+    names_to = "Var1",
+    values_to = "FST"
+  ) %>%
+  rename(Var2 = POS) 
+prec_melted$Var2= paste0("Os_",prec_melted$Var2)
+
+prec_melted <- prec_melted %>%
+  group_by(Var2) %>%
+  mutate(mean_FST_pop = mean(FST)) %>%
+  arrange(mean_FST_pop) %>%
+  ungroup() %>%
+  mutate(Var2 = factor(Var2, levels = unique(Var2)))
+
+############ Evapotranspiration ############ 
+evapo_fst=sig_snp_fst %>% 
+  filter(variables=="evapotranspiration") %>% 
+  select(-c(CHROM,variables,q.value))
+
+evapo_melted= evapo_fst %>%
+  pivot_longer(
+    cols = c(Bangladesh, China, Cambodia,India,Indonesia, Thailand),
+    names_to = "Var1",
+    values_to = "FST"
+  ) %>%
+  rename(Var2 = POS) 
+evapo_melted$Var2= paste0("Os_",evapo_melted$Var2)
+
+evapo_melted <- evapo_melted %>%
+  group_by(Var2) %>%
+  mutate(mean_FST_pop = mean(FST)) %>%
+  arrange(mean_FST_pop) %>%
+  ungroup() %>%
+  mutate(Var2 = factor(Var2, levels = unique(Var2)))
+
+
+########### PLOT ########### 
+
+library(viridis)
+library(ggplot2)
+ggplot(temp_melted, aes(x = Var1, y = Var2, fill = FST)) +
+  geom_tile(color = "white", size = 0.2) +  # Add gridlines for clarity
+  scale_fill_viridis(
+    name = expression(F[ST]),
+    option = "plasma",
+    limits = c(min(temp_melted$FST), max(temp_melted$FST))  # Set limits to the Fst value range
+  ) +
+  labs(
+    title = "Fst Values Across Significant SNPs and Populations for Temperature PC1",
+    x = "Population",
+    y = "SNP"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),  # Rotate SNP labels 
+    panel.grid = element_blank(),  # Remove gridlines 
+    legend.position = "right",    
+    legend.key.height = unit(1, "cm")  
+  )
+
+
+
+#########
+library(reshape2)
+# Reshape the data from wide to long format
+data_long <- melt(sig_snp_fst, id.vars = c("CHROM", "POS", "SNP", "variables", "q.value"),
+                  variable.name = "Population", value.name = "FST")
+data_long <- data_long %>%
+  arrange(variables, SNP) %>%
+  mutate(SNP = factor(SNP, levels = unique(SNP)))
+
+data_long <- melt(sig_snp_fst, id.vars = c("CHROM", "POS", "SNP", "variables", "q.value"),
+                  variable.name = "Population", value.name = "FST")
+ggplot(data_long, aes(x = Population, y = SNP, fill = FST)) +
+  geom_tile(color = "white", size = 0.2) +  # Add gridlines for clarity
+  scale_fill_viridis(
+    name = expression(F[ST]),
+    option = "plasma",
+    limits = c(min(temp_melted$FST), max(temp_melted$FST)) +  # Set limits to the Fst value range
+  labs(title = "FST Heatmap by Population",
+       x = "Population", y = NULL) +  # Remove y-axis label (SNPs are not readable)
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8),
+        axis.text.y = element_blank(),  # Hide individual SNP labels
+        axis.ticks.y = element_blank())
+```
+The following was built with the help of Chat GPT
+Making Manhattan plots using Fst data
+```{r}
+# Step 1: Compute cumulative positions for chromosomes
+# This step ensures all chromosomes are plotted sequentially along the x-axis
+chromosome_order <- pop_fst %>%
+  group_by(CHROM) %>%
+  summarise(max_pos = max(BIN_END, na.rm = TRUE)) %>%
+  mutate(offset = cumsum(lag(max_pos, default = 0)))  # Compute offsets
+
+pop_fst <- pop_fst %>%
+  left_join(chromosome_order, by = "CHROM") %>%
+  mutate(CumPOS = BIN_START + offset)  # Adjust positions using offsets
+
+# Step 2: Create the Manhattan plot
+ggplot(pop_fst, aes(x = CumPOS, y = Bangladesh_meanFST, color = factor(CHROM))) +
+  geom_point(alpha = 0.8, size = 1, aes(ymin=0, ymax=1)) +  # Points for FST values
+  geom_hline(
+    yintercept = quantile(pop_fst$Bangladesh_meanFST, 0.99, na.rm = TRUE),
+    linetype = "solid", color = "red", size = 1, alpha = 0.7
+  ) +  # 99th percentile
+  geom_hline(
+    yintercept = quantile(pop_fst$Bangladesh_meanFST, 0.95, na.rm = TRUE),
+    linetype = "dashed", color = "blue", size = 1, alpha = 0.7
+  ) +  # 95th percentile
+  scale_color_manual(
+    values = rep(c("azure4", "black"), length(unique(pop_fst$CHROM)))
+  ) +  # Alternate colors for chromosomes
+  labs(
+    title = "Bangladesh 100kb window, 50kb step",
+    x = "Genomic Position",
+    y = expression(F[ST]),
+    color = "Chromosome"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title.x = element_text(face = "italic"),
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold"),
+    panel.grid = element_blank()
+  ) +
+  scale_x_continuous(
+    breaks = chromosome_order$offset + chromosome_order$max_pos / 2,
+    labels = chromosome_order$CHROM
+  )  # Add chromosome labels to x-axis
+
+
+```
+Density plots
+```{r}
+pop_no_chr=pop_fst
+pop_no_chr$CHROM=NULL
+#pop_no_chr$POS=NULL
+library(tidyr)
+library(viridis)
+pop_no_chr <- pivot_longer(
+  pop_no_chr,
+  cols = -POS,  # Columns to reshape (everything except SNP)
+  names_to = "Population",
+  values_to = "FST"
+)
+
+stats <- pop_no_chr %>%
+  group_by(Population) %>%
+  summarise(
+    median = median(FST, na.rm = TRUE),
+    p95 = quantile(FST, 0.95, na.rm = TRUE)
+  )
+ggplot(pop_no_chr, aes(x = FST, fill = factor(Population), color = factor(Population))) +
+  geom_density(alpha = 0.3, size = 0.1) +  # alpha controls fill transparency, size adjusts line thickness
+ # Add vertical lines for median and 95th percentile
+  geom_vline(data = stats, aes(xintercept = median, color = Population), linetype = "dashed", size = 1) +
+  geom_vline(data = stats, aes(xintercept = p95, color = Population), linetype = "solid", size = 1) +
+  scale_fill_viridis_d(name = "Population", option = "viridis") +  # Fill colors from viridis
+  scale_color_viridis_d(name = "Population", option = "viridis") + 
+  labs(
+    title = "Density Plot for Populations",
+    x = "X-Axis Label",
+    y = "Density"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )+
+  facet_wrap(~ Population)
+```
+
+
+
