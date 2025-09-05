@@ -1,0 +1,160 @@
+---
+title: "Fst heatmap"
+author: "Isabel"
+date: '`r Sys.Date()`'
+output: html_document
+---
+
+This is the code I used to create the files below. Isaura shared the following script. 
+```{bash}
+#!/bin/bash
+
+module load vcftools/intel/0.1.16
+
+for i in bangladesh cambodia china india indonesia thailand; do
+
+vcftools --vcf indica_804_mac_geno_imp005.vcf \
+         --weir-fst-pop ${i}_pop.txt \
+         --weir-fst-pop all_not_${i}_pop.txt \
+         --out ${i}_vs_all_not_${i}
+
+```
+
+## Files to load.
+```{r}
+populations_lists = c("Bangladesh", "Cambodia", "China", "India", "Indonesia", "Thailand")
+
+fst_list = list()
+
+for (pop_name in populations_lists) {
+  file_path = paste0(
+    "/scratch/ib2382/GEA/June_lfmm_804/FST/",pop_name, "_vs_all_not_", pop_name, ".weir.fst")
+  fst_list[[pop_name]] = read.table( file = file_path,header = TRUE,col.names = c("CHROM", "POS", paste0(pop_name, "_FST")))
+}
+#to merge the data and create one data frame with all the Fst data per SNP
+fst_merged <- Reduce(function(x, y) merge(x, y, by = c("CHROM", "POS"), all = TRUE),
+                     fst_list)
+
+```
+
+## Data manipulation to get whole genome Fst values
+
+```{r pressure, echo=FALSE}
+#Merging q.values with genome data
+snp_maf_table = read.table("/scratch/ib2382/plink_indica_mac_geno_imp_804_005.bim", header=FALSE)
+snp_maf_table = snp_maf_table %>% dplyr::select(V1,V4)
+
+nrow(snp_maf_table)
+snp_maf_table$SNP= paste0("Os", 1:nrow(snp_maf_table))
+
+colnames(snp_maf_table)=c("CHROM", "POS","SNP")
+snp_maf_table$CHROM_NUM <- snp_maf_table$CHROM  # copy column
+
+CHROM_NAME <- unique(snp_maf_table$CHROM)
+
+for (i in seq_along(CHROM_NAME)) {
+  snp_maf_table$CHROM_NUM[snp_maf_table$CHROM == CHROM_NAME[i]] <- i
+}
+fst_snp=cbind(SNP=snp_maf_table$SNP,fst_merged)
+####
+#Whole genome Fst
+#write.table(fst_snp,"/scratch/ib2382/GEA/June_lfmm_804/FST/whole_genome_fst.txt")
+fst_snp=read.delim("/scratch/ib2382/GEA/June_lfmm_804/FST/whole_genome_fst.txt", sep="")
+```
+
+## Loading data of significant SNPs found in LFMM
+
+Here I am substracting the Fst values for the most significant SNP per peak found using LFMM.
+```{r}
+library(dplyr)
+boundaries_temp=read.csv("/scratch/ib2382/GEA/June_lfmm_804/boundaries_temp_10_KB.csv")
+boundaries_temp$variable="Temperature PC1"
+boundaries_temp=boundaries_temp %>% 
+  filter(size==0) #I am removing SNPs whose peak size is 0 SNPs, they might not be true peaks
+boundaries_PET=read.csv("/scratch/ib2382/GEA/June_lfmm_804/boundaries_temp6_10_KB.csv")
+boundaries_PET$variable="PET"
+boundaries_prec=read.csv("/scratch/ib2382/GEA/June_lfmm_804/boundaries_prec_10_KB.csv")
+boundaries_prec$variable="Precipitation PC1"
+
+snps_from_peaks=rbind(boundaries_temp,boundaries_prec,boundaries_PET)
+snps_from_peaks=snps_from_peaks[,c("sig_SNP_name","variable")] #here I am subsetting the variables I want to keep: SNP name, and variable
+colnames(snps_from_peaks)=c("SNP","variable") #I am changing column names to make it easier to merge to the FST df later
+#### Subsetting Fst data by the Specific values we care about
+snps_for_heatmap= fst_snp %>% 
+  filter(SNP %in% snps_from_peaks$SNP)
+```
+## Heatmap
+tried ggplot and pheatmap.
+
+ggplot tutorial came from this site:
+https://r-graph-gallery.com/79-levelplot-with-ggplot2.html
+
+pheatmap tutorial came from this site:
+https://bioinformatics.ccr.cancer.gov/docs/data-visualization-with-r/Lesson5_intro_to_ggplot/
+```{r}
+library(ggplot2)
+library(tidyr)
+library(RColorBrewer)
+library(viridis)
+library(pheatmap)
+
+#Here I am creating a DF with a "long-data" format. This necessary for creating a Heatmap in ggplot
+fst_long = snps_for_heatmap %>%
+  pivot_longer(
+    cols = ends_with("_FST"),
+    names_to = "Population",
+    values_to = "FST") %>% 
+  left_join(snps_from_peaks[,c("SNP", "variable")], by="SNP") %>% 
+  arrange(variable, SNP) %>%
+  mutate(SNP = factor(SNP, levels = unique(SNP)))
+
+dev.new()
+png("/scratch/ib2382/GEA/June_lfmm_804/FST/heatmap_ggplot.png", res=300, width=7, height=4.5, unit="in")
+
+ggplot(fst_long, aes(x = Population, y = SNP, fill = FST)) +
+  geom_tile() +
+  scale_fill_gradient(low = "blue", high = "red") +
+  labs(title = "Heatmap of Fst values",
+       x = "Population", y = "SNP") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.ticks.y = element_blank())
+dev.off()
+######### Using pheatmap
+
+mat=snps_for_heatmap %>% 
+  left_join(snps_from_peaks[,c("SNP", "variable")], by="SNP") %>%
+  arrange(variable, SNP)
+
+mat_fst=as.matrix(mat[,4:9])
+rownames(mat_fst) = mat$SNP
+
+annotation_for_heatmap=data.frame(variable=factor(mat$variable))
+rownames(annotation_for_heatmap) <-  mat$SNP
+
+# Colors for categories
+categories = levels(annotation_for_heatmap$variable)
+colors_for_categories=viridis(n = length(categories))
+names(colors_for_categories)=categories
+annotation_colors=list(variable = colors_for_categories)
+
+
+# Use a color friendly palette: 
+pal <- viridis(100)
+
+
+png("/scratch/ib2382/GEA/June_lfmm_804/FST/heatmap_cluster.png", res=300, width=7, height=4.5, unit="in")
+
+pheatmap(mat_fst,
+         annotation_row = annotation_for_heatmap,
+         annotation_colors = annotation_colors,
+         cluster_rows = T,        # keep rows grouped by variable
+         cluster_cols = T,         # cluster columns if desired
+         color = pal,
+         show_rownames = FALSE,
+         main="Fst values for highest SNP in each peak",
+         fontsize=5, cellwidth=25, cellheight=5) 
+
+dev.off()
+```
+
