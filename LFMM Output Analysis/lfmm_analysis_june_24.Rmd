@@ -20,15 +20,9 @@ temp_pcs=readRDS("/scratch/ib2382/GEA/June_lfmm_804/K6/june_27_output2.rds")
 prec_pcs=readRDS("/scratch/ib2382/GEA/June_lfmm_804/K6/june_27_output1.rds")
 temp6=readRDS("/scratch/ib2382/GEA/June_lfmm_804/K6/july_3rd2.rds") #PET
 
-
-#Clumps
-temp_pcs=read.csv("clumped_temp_pcs.csv")
-temp6=read.csv("clumped_temp6.csv")
-prec_pcs=read.csv("clumped_prec_pcs.csv")
-water_pcs=read.csv("clumped_water_pcs.csv")
 ```
 
-Quality control:
+Quality control figures:
 
 
 ```{r pressure, echo=FALSE}
@@ -52,9 +46,10 @@ for (proj_name in project_list) {
 dev.off()
 ```
 
-This code chunk generates 2 data frames: FDR adjusted p.values and z.scores
+This code chunk generates 2 data frames: FDR adjusted p.values (so these are q.values) and z.scores
 ```{r}
-project_list=c("prec_pcs", "temp_pcs","temp6")
+
+project_list=c("prec_pcs_10_KB", "temp_pcs_10_KB","temp6_10_KB")
 q.values_list=c()
 for (project in project_list){
   project_data <- get(project)
@@ -72,9 +67,10 @@ for (project in project_list){
 z.scores=as.data.frame(z.scores_list)
 ```
 
-Making a chromosome table:
+Making a chromosome table where the Z scores and q.values will be stored:
 ```{r}
-snp_maf_table = read.table("/scratch/ib2382/plink_indica_mac_geno_imp_804_005.bim", header=FALSE)
+#snp_maf_table = read.table("/scratch/ib2382/plink_indica_mac_geno_imp_804_005.bim", header=FALSE)
+snp_maf_table = read.table("/scratch/ib2382/GEA/June_lfmm_804/K6_10kb_pruning/plink_indica_mac_geno_imp_804_005_10kb.bim", header=FALSE)
 library(dplyr)
 snp_maf_table = snp_maf_table %>% dplyr::select(V1,V4)
 
@@ -84,28 +80,24 @@ snp_maf_table$SNP= paste0("Os", 1:nrow(snp_maf_table))
 
 colnames(snp_maf_table)=c("CHROM", "POS","SNP")
 
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018157.1"]<-1
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018158.1"]<-2
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018159.1"]<-3
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018160.1"]<-4
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018161.1"]<-5
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018162.1"]<-6
+snp_maf_table$CHROM_NUM <- snp_maf_table$CHROM  # copy column
 
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018163.1"]<-7
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018164.1"]<-8
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018165.1"]<-9
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018166.1"]<-10
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018167.1"]<-11
-snp_maf_table$CHROM[snp_maf_table$CHROM=="CP018168.1"]<-12
+CHROM_NAME <- unique(snp_maf_table$CHROM)
 
-snp_maf_table$CHROM <- as.numeric(snp_maf_table$CHROM)
+for (i in seq_along(CHROM_NAME)) {
+  snp_maf_table$CHROM_NUM[snp_maf_table$CHROM == CHROM_NAME[i]] <- i
+}
 
 q.value.snp=cbind(snp_maf_table,q.values)
-q.value.snp$CHROM=as.numeric(q.value.snp$CHROM)
+
+q.value.snp$CHROM_NUM=as.numeric(q.value.snp$CHROM_NUM)
+
 q.value.snp$POS=as.numeric(q.value.snp$POS)
+
 z.value.snp=cbind(snp_maf_table,z.scores)
-write.csv(q.value.snp,"/scratch/ib2382/GEA/June_lfmm_804/K6/qvalueslfmm.csv")
-write.csv(z.value.snp,"/scratch/ib2382/GEA/June_lfmm_804/K6/zscoreslfmm.csv")
+
+write.csv(q.value.snp,"/scratch/ib2382/GEA/June_lfmm_804/K6_10kb_pruning/qvalueslfmm.csv")
+write.csv(z.value.snp,"/scratch/ib2382/GEA/June_lfmm_804/K6_10kb_pruning/zscoreslfmm.csv")
 
 ```
 
@@ -122,51 +114,57 @@ temp60.01=q.value.snp[which(q.value.snp$temp6< 0.01), ]
 
 ```
 
-manhattan plots
+Code to generate manhattan plots
 ```{r}
-install.packages("remotes")
-remotes::install_github("leejs-abv/ggmanh")
-
-library(ggmanh) 
+#install.packages("remotes")
+#remotes::install_github("leejs-abv/ggmanh")
+library(ggmanh)
+library(dplyr)
 library(qqman)
-q.value.snp=read.csv("/scratch/ib2382/GEA/June_lfmm_804/K6/qvalueslfmm.csv")
+
 # Define alternating chromosome colors
 chr_colors <- c("black", "azure4")
 
 # Convert CHROM to factor
-q.value.snp$CHROM <- factor(q.value.snp$CHROM, c(1:12))
+q.value.snp$CHROM_NUM <- factor(q.value.snp$CHROM_NUM, c(1:12))
 
 # Assign alternating colors and highlight significant SNPs
 snp_table <- q.value.snp %>%
-  mutate(chr_color = ifelse(as.numeric(CHROM) %% 2 == 0,"black", "azure4"),
+  mutate(chr_color = ifelse(as.numeric(CHROM_NUM) %% 2 == 0,"black", "azure4"),
          plot_color =  chr_color)
-         #plot_color = ifelse(temp6 <= 0.05, "brown2", chr_color))  # Adjust significance as needed
+         plot_color = ifelse(temp6 <= 0.05, "brown2", chr_color))  # Adjust significance as needed
 
 # Define color mapping
 highlight_colormap <- c("black" = "black", 
                         "azure4" = "azure4", 
                         "brown2" = "brown2")
 
+
+
 # Preprocess data for Manhattan plot
 tmp <- manhattan_data_preprocess(
-  snp_table, pval.colname = "water_pcs", chr.colname = "CHROM", pos.colname = "POS",
-  highlight.colname = "plot_color", highlight.col = highlight_colormap,
+  test, pval.colname = "temp_pcs_10_KB", 
+  chr.colname = "CHROM_NUM", 
+  pos.colname = "POS",
+  highlight.colname = "plot_color", 
+  highlight.col = highlight_colormap,
   signif = c(0.01,0.05)
 )
 
-
+  
 # Generate Manhattan plot with custom threshold line
 g <- manhattan_plot(
-  tmp, plot.title = "Water balance variables PC1",
+  tmp, plot.title = "Temperature PC1 Manhattan plot",
   color.by.highlight = TRUE,
   signif = c(0.01,0.05))
+
 q <- g +
   geom_hline(yintercept = -log10(0.01), color = "red", linetype = "dashed", linewidth = 0.5) +
   geom_hline(yintercept = -log10(0.05), color = "blue", linetype = "dashed", linewidth = 0.5)+
   theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
 
 #Save the plots
-png("/scratch/ib2382/GEA/June_lfmm_804/K6/water_pcs.png", width = 1200, height = 800, res = 150)
+png("/scratch/ib2382/GEA/June_lfmm_804/K6_10kb_pruning/", width = 1200, height = 800, res = 150)
 
 # Print the updated plot into the PNG device
 print(q)
@@ -174,15 +172,18 @@ print(q)
 # Close the PNG device to write the file
 dev.off()
 ```
+
+
 #Getting peaks
 the dataframe "boundaries" should give a table with the most significant snp, and its position. As well as the peak size, start and end position. 
 Note: Ornob created this script. I just tweaked a few lines.
 ```{r}
+
 library(dplyr) #to subset and mutate columns as we go
 
 # These are your q.value columns (environmental variables)
-qval_columns = c(colnames(q.values))  #or replace with your actual q.value column names
-
+qval_columns = c(colnames(q.value.snp))  #or replace with your actual q.value column names
+qval_columns = c("prec_pcs_10_KB", "temp_pcs_10_KB","temp6_10_KB")
 # Create a list to store results
 clumped_results <- list()
 
@@ -191,8 +192,8 @@ for (var in qval_columns) {
   
   # Filter SNPs where q.value < 0.01
   filtered <- q.value.snp %>%
-    filter(.data[[var]] < 1e-2) %>%
-    arrange(CHROM, POS)  # Make sure it's sorted, we will use this to create "chains"
+    filter(.data[[var]] < 0.01) %>%
+    arrange(CHROM_NUM, POS)  # Make sure it's sorted, we will use this to create "chains"
   
   if (nrow(filtered) > 0) {
     # Initialize chain vector
@@ -200,8 +201,8 @@ for (var in qval_columns) {
     
     # Loop to assign chain groups
     for (i in 2:nrow(filtered)) {
-      if (filtered$CHROM[i] != filtered$CHROM[i - 1] ||
-          filtered$POS[i] - filtered$POS[i - 1] > 200000) {
+      if (filtered$CHROM_NUM[i] != filtered$CHROM_NUM[i - 1] ||
+          filtered$POS[i] - filtered$POS[i - 1] > 100000) {
         chain[i] = chain[i - 1] + 1
       } else {
         chain[i] = chain[i - 1]
@@ -225,29 +226,36 @@ for (var in names(clumped_results)) {
 
 Finding peak based on the previously found "clumps"
 ```{r}
-get_boundaries=function(df,column){
+
+get_boundaries_LD <- function(df, column) {
   boundaries2 <- df %>%
     group_by(chain) %>%
-    mutate(
-      sig_SNP = min(.data[[column]]),  # variable is the name of the q.value column
+    summarise(
+      CHROM = first(CHROM_NUM), # keep chromosome
+      sig_SNP = min(.data[[column]]), # min q.value
       sig_SNP_POS = POS[which.min(.data[[column]])],
       sig_SNP_name = SNP[which.min(.data[[column]])],
-      peak_start = min(POS),
-      peak_end = max(POS)
+      peak_start = sig_SNP_POS - 100000,
+      peak_end = sig_SNP_POS + 100000,
+      snps_in_chain = n(), #this is to count the # of SNPs within the chain or clump
+      .groups = "drop"
     ) %>%
-    distinct(chain, .keep_all = TRUE) %>%
-    mutate(size = peak_end - peak_start)
+    arrange(CHROM, sig_SNP_POS) %>%# order chains
+    group_by(CHROM) %>% # reset lag within chromosome
+    mutate(dist.focal.snp = sig_SNP_POS - lag(sig_SNP_POS)) %>% #to get the distances between focal SNPs
+    ungroup()
+  
   return(boundaries2)
 }
 
-boundaries_temp=get_boundaries(temp_pcs, "temp_pcs")
-boundaries_prec=get_boundaries(prec_pcs, "prec_pcs")
-boundaries_temp6=get_boundaries(temp6, "temp6")
-boundaries_water=get_boundaries(water_pcs, "water_pcs")
-#write.csv(boundaries_temp, "boundaries_temp.csv")
-#write.csv(boundaries_prec, "boundaries_prec.csv")
-#write.csv(boundaries_temp6, "boundaries_temp6.csv")
-#write.csv(boundaries_water, "boundaries_water.csv")
+boundaries_temp=get_boundaries_LD(clumped_results$temp_pcs_10_KB, "temp_pcs_10_KB")
+boundaries_prec=get_boundaries_LD(clumped_results$prec_pcs_10_KB, "prec_pcs_10_KB")
+boundaries_temp6=get_boundaries_LD(clumped_results$temp6_10_KB, "temp6_10_KB")
+
+write.csv(boundaries_temp, "boundaries_temp.csv", row.names = F)
+write.csv(boundaries_prec, "boundaries_prec.csv",row.names = F)
+write.csv(boundaries_temp6, "boundaries_temp6.csv",row.names = F)
+
 ```
 
 #Check for peaks that could be near too near others
@@ -255,9 +263,9 @@ boundaries_water=get_boundaries(water_pcs, "water_pcs")
 peak_distance_test=boundaries_temp %>% 
   group_by(CHROM) %>% 
   mutate(distance_between=peak_start-lag(peak_end))
-
-peak_distance_test$distance_between<"200000" #they should all be false
+peak_distance_test$distance_between<"100000"
 ```
+
 To annotate the peaks:
 
 This next part is to merge your data with GFF files:
@@ -360,36 +368,18 @@ merge_to_annotate=function(boundaries){
     mutate(ID  = sapply(descriptor, extract_os_word))
   shuAnno_snps=merge(merged_gff_peaks_os,shuAnno, by="ID")
   shuhui_snps=merge(shuAnno_snps,nipAnno, by= "LOC")
-  names(shuhui_snps)[28] <- "Locus_ID" 
+  names(shuhui_snps)[ncol(shuhui_snps)] <- "Locus_ID" 
   total_boundary_genelist=merge(shuhui_snps,nipCuratedRep, by= "Locus_ID")
   return(total_boundary_genelist)
 }
 
-boundaries_prec=read.csv( "boundaries_prec.csv")
-boundaries_temp=read.csv( "boundaries_temp.csv")
-boundaries_temp6=read.csv( "boundaries_temp6.csv")
-boundaries_water=read.csv( "boundaries_water.csv")
-
 precipitation_annotations=merge_to_annotate(boundaries_prec)
 temperature_annotations=merge_to_annotate(boundaries_temp)
 evapotranspiration_annotations=merge_to_annotate(boundaries_temp6)
-water_balance_annotations=merge_to_annotate(boundaries_water)
 
-write.csv(water_balance_annotations, "water_balance_annotations.csv")
-
-precipitation_annotations=read.csv( "precipitation_annotations.csv")
-temperature_annotations=read.csv( "temperature_annotations.csv")
-evapotranspiration_annotations=read.csv( "evapotranspiration_annotations.csv")
-water_balance_annotations=read.csv( "water_balance_annotations.csv")
-#input for orthofinder:
-#orthofinder_input=merged_gff_peaks_os %>% 
-#  select(-c(X,POS,SNP,temp,prec,evapo,z.temp,z.prec,z.evapo,score,strand,frame)) %>% 
-#  filter(feature=="gene")
-#write.csv(orthofinder_input, "total_boundary_genelist_annotations.csv")
+#write.csv(precipitation_annotations, "precipitation_annotations.csv", row.names = F)
+#write.csv(temperature_annotations, "temperature_annotations.csv", row.names = F)
+#write.csv(evapotranspiration_annotations, "evapotranspiration_annotations.csv", row.names = F)
 ```
-Frequency of specific snps
 
-```{r}
-plink_file=read.delim("/scratch/ib2382/plink_indica_mac_geno_imp_804_005_freq.afreq")
-```
 
