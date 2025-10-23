@@ -131,19 +131,17 @@ q.value.snp$CHROM_NUM <- factor(q.value.snp$CHROM_NUM, c(1:12))
 # Assign alternating colors and highlight significant SNPs
 snp_table <- q.value.snp %>%
   mutate(chr_color = ifelse(as.numeric(CHROM_NUM) %% 2 == 0,"black", "azure4"),
-         plot_color =  chr_color)
-         plot_color = ifelse(temp6 <= 0.05, "brown2", chr_color))  # Adjust significance as needed
-
-# Define color mapping
+         plot_color =  chr_color,
+         plot_color = ifelse(temp6_10_KB <= 0.01, "#0072B2",            # highly significant
+                             ifelse(temp6_10_KB <= 0.05, "#E69F00", chr_color) ))
 highlight_colormap <- c("black" = "black", 
                         "azure4" = "azure4", 
-                        "brown2" = "brown2")
-
-
-
+                        "#0072B2" = "#0072B2",
+                        "#E69F00" = "#E69F00")
 # Preprocess data for Manhattan plot
+
 tmp <- manhattan_data_preprocess(
-  test, pval.colname = "temp_pcs_10_KB", 
+  snp_table, pval.colname = "temp6_10_KB", 
   chr.colname = "CHROM_NUM", 
   pos.colname = "POS",
   highlight.colname = "plot_color", 
@@ -154,7 +152,7 @@ tmp <- manhattan_data_preprocess(
   
 # Generate Manhattan plot with custom threshold line
 g <- manhattan_plot(
-  tmp, plot.title = "Temperature PC1 Manhattan plot",
+  tmp, plot.title = "Potential evapotranspiration PC1 Manhattan plot",
   color.by.highlight = TRUE,
   signif = c(0.01,0.05))
 
@@ -162,12 +160,14 @@ q <- g +
   geom_hline(yintercept = -log10(0.01), color = "red", linetype = "dashed", linewidth = 0.5) +
   geom_hline(yintercept = -log10(0.05), color = "blue", linetype = "dashed", linewidth = 0.5)+
   theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+print(q)
 
 #Save the plots
-png("/scratch/ib2382/GEA/June_lfmm_804/K6_10kb_pruning/", width = 1200, height = 800, res = 150)
+png("/scratch/ib2382/GEA/June_lfmm_804/K6_10kb_pruning/pet_manhattan.png", width = 1200, height = 800, res = 150)
 
 # Print the updated plot into the PNG device
 print(q)
+
 
 # Close the PNG device to write the file
 dev.off()
@@ -382,4 +382,34 @@ evapotranspiration_annotations=merge_to_annotate(boundaries_temp6)
 #write.csv(evapotranspiration_annotations, "evapotranspiration_annotations.csv", row.names = F)
 ```
 
+# table for supplemental material:
+The following code creates a table that contains Chromosome, peak number, focal SNP position, name, q.value, peak start and end.
+
+```{r}
+evapotranspiration_annotations=read.csv("evapotranspiration_annotations-2.csv")
+temperature_annotations=read.csv("temperature_annotations-3.csv")
+precipitation_annotations=read.csv("precipitation_annotations-2.csv")
+library(dplyr)
+summary_table <- precipitation_annotations %>% 
+  group_by(chain) %>%
+  summarise(
+    CHROM = CHROM,
+    sig_SNP = sig_SNP,
+    sig_SNP_name = sig_SNP_name,
+    sig_SNP_POS = sig_SNP_POS,
+    peak_start = peak_start,
+    peak_end = peak_end,
+    genes_in_peak = paste(
+      unique(na.omit(trimws(Oryzabase.Gene.Symbol.Synonym.s.))),
+      collapse = ", "
+    ),
+    TO_in_peak = paste(
+      unique(na.omit(trimws(Trait_Oncology))),
+      collapse = ", "
+    ),
+    .groups = "drop"
+  ) %>%
+  distinct()
+write.csv(summary_table, "precipitation_summary_table.csv", row.names = F)
+```
 

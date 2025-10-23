@@ -34,7 +34,7 @@ pc_database$PET=as.numeric(pc_database$PET)
 #1.5 Visualizing the data (change based on which values you want to display)
 
 ```{r pressure, echo=FALSE}
-
+library(ggpubr)
 counts <- pc_database %>%
   group_by(K6) %>%
   summarise(n = n(), .groups = "drop")
@@ -68,6 +68,7 @@ p=ggplot(pc_database, aes(x = K6, y = PET, color = K6)) +
                      labels = group_labels)+
   scale_x_discrete(labels = group_labels) +
   theme_classic() +
+  stat_compare_means(method = "kruskal.test", label.y = 35)+
   theme(panel.border = element_rect(colour = "black", fill = NA),
         plot.title = element_text(hjust = 0.5, size = 15, face = "bold"))
 
@@ -86,7 +87,7 @@ If the null hypothesis for barletts test is rejected, that means there is a sign
 
 ```{r}
 #Barlett's tests for homoscedasticity:
-temp.barlett=bartlett.test(tempPC1 ~ K6, data=pc_database) #p.value <0.05
+temp.barlett=bartlett.test(tempPC1 ~ K6, data=pc_database_) #p.value <0.05
 prec.barlett=bartlett.test(precPC1 ~ K6, data=pc_database)#p.value <0.05
 pet.barlett=bartlett.test(PET ~ K6, data=pc_database)#p.value <0.05
 
@@ -98,15 +99,31 @@ pet.shapiro=by(pc_database$PET, pc_database$K6, shapiro.test) #p.value <0.05
 #3.Non-parametric test similar to ANOVA
 
 ```{r}
+pc_database_filtered=pc_database %>% 
+  dplyr::filter(K6 !="no_group")
+kruskal.test(precPC1 ~ K6, data = pc_database_filtered)
+pairwise.wilcox.test(pc_database_filtered$precPC1, pc_database_filtered$K6, p.adjust.method = "fdr")
 
-kruskal.test(precPC1 ~ K6, data = pc_database)
-pairwise.wilcox.test(pc_database$precPC1, pc_database$K6, p.adjust.method = "fdr")
-
-kruskal.test(tempPC1 ~ K6, data = pc_database)
-pairwise.wilcox.test(pc_database$tempPC1, pc_database$K6, p.adjust.method = "fdr")
+kruskal.test(tempPC1 ~ K6, data = pc_database_filtered)
+pairwise.wilcox.test(pc_database_filtered$tempPC1, pc_database_filtered$K6, p.adjust.method = "fdr")
 
 kruskal.test(PET ~ K6, data = pc_database)
-pairwise.wilcox.test(pc_database$PET, pc_database$K6, p.adjust.method = "fdr")
+pairwise.wilcox.test(pc_database_filtered$PET, pc_database_filtered$K6, p.adjust.method = "fdr")
+
+library("FSA")
+
+duun_test=dunnTest(tempPC1~ K6,
+  data = pc_database_filtered,
+  method = "holm"
+)
+dunnTest(PET~ K6,
+  data = pc_database,
+  method = "holm"
+)
+dunnTest(precPC1~ K6,
+  data = pc_database,
+  method = "holm"
+)
 ```
 #3.5 perMANOVA
 
@@ -139,3 +156,80 @@ pairwise.adonis(dist_temp, factors = pc_database$K6, sim.method = 'euclidean', p
 
 ```
 Overall, this shows that the populations are in fact significantly different in their environmental values. BUT we need to check the pairwise comparisons more closely. 
+
+PCA analysis
+```{r}
+library(mice)
+library(FactoMineR)
+library(factoextra)
+library("paletteer")
+group_labels <- c("Bangladesh" = "Bangladesh", "Cambodia" = "Mainland\nSEA 1", 
+                  "China" = "China","India" = "India",
+                  "Indonesia" = "Island\nSEA", "Thailand" = "Mainland\nSEA 2",
+                  "no_group"="no_group")
+temp_data=env_database %>% 
+  dplyr::select(c(K6,temp1,temp2,temp3,temp4,gdd,bio3.y,bio4.y)) %>% 
+  dplyr::filter(K6 !="no_group")
+
+pca_temp<- prcomp(temp_data[,c(2:8)],scale=TRUE, center = T)
+fviz_pca_ind(pca_temp)
+q=fviz_pca_ind(pca_temp,
+             geom.ind = "point", # show points only (nbut not "text")
+             title = "Principal Component Analysis",
+             subtitle = "Temperature data",
+             xlab = "PC1", ylab = "PC2",
+             col.ind = temp_data$K6, # color by groups
+             addEllipses = F, # Concentration ellipses,
+             repel=T)
+
+             
+##### PREC
+
+precipitation_variables=env_database %>% 
+  dplyr::select(K6,prec2,prec3,prec4,bio16,bio17,bio18,avg_prec_year) %>% 
+  filter(K6 !="no_group")
+
+pca_prec<- prcomp(precipitation_variables[,2:8],scale=TRUE, center= T)
+
+p=fviz_pca_ind(pca_prec, axes = c(1, 2),
+             title = "Principal Component Analysis",
+             subtitle = "Precipitation data",
+             xlab = "PC1", ylab = "PC2",
+             geom.ind = "point", # show points only (nbut not "text")
+             col.ind = precipitation_variables$K6, # color by groups
+             addEllipses = F, # Concentration ellipses,
+             repel=T)
+# p+scale_color_manual(name= "Population",
+  #                   labels = group_labels)
+                                
+ggsave("temp_pc_ind.pdf", q, width = 6.7, height = 4.5, dpi = 600)
+print(q)
+dev.off()
+
+####### over all:
+
+tested_data=env_database %>% 
+  dplyr::select(c(K6,temp1,temp2,temp3,temp4,gdd,bio3.y,bio4.y,
+                  prec2,prec3,prec4,bio16,bio17,bio18,avg_prec_year,
+                  temp6)) %>% 
+  dplyr::filter(K6 != "no_group")
+
+pca_all<- prcomp(tested_data[,2:16],scale=TRUE, center= T)
+
+q=fviz_pca_ind(pca_all, axes = c(1, 2),
+             title = "Principal Component Analysis",
+             subtitle = "All environmental data",
+             xlab = "PC1", ylab = "PC2",
+             geom.ind = "point", # show points only (nbut not "text"),
+             ellipse.alpha=0.01,
+             col.ind = tested_data$K6, # color by groups
+             palette=paletteer_d("wesanderson::AsteroidCity2"),
+             addEllipses = T, # Concentration ellipses,
+             repel=T,
+             ggtheme = theme_minimal())
+
+ggsave("over_all_pca.pdf", q, width = 6.7, height = 4.5, dpi = 600)
+print(q)
+dev.off()
+```
+
