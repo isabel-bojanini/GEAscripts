@@ -157,6 +157,7 @@ pairwise.adonis(dist_temp, factors = pc_database$K6, sim.method = 'euclidean', p
 ```
 Overall, this shows that the populations are in fact significantly different in their environmental values. BUT we need to check the pairwise comparisons more closely. 
 
+<<<<<<< Updated upstream
 PCA analysis
 ```{r}
 library(mice)
@@ -230,6 +231,47 @@ q=fviz_pca_ind(pca_all, axes = c(1, 2),
 
 ggsave("over_all_pca.pdf", q, width = 6.7, height = 4.5, dpi = 600)
 print(q)
+=======
+# Map of where samples were collected 
+```{r}
+library(maps)
+library(mapdata)
+library(geodata)
+sea_map <- map_data("world",region=c("Bangladesh","Brunei","Bhutan","China","Indonesia","India","Cambodia","South Korea","Laos","SriLanka","Myanmar","Malaysia","Nepal","Philippines","Thailand","Taiwan","Vietnam", "Micronesia", "Japan", "North Korea"))
+
+#rename groups
+group_labels <- c("Bangladesh" = "Bangladesh", "Cambodia" = "Mainland\nSEA 1", 
+                  "China" = "China","India" = "India",
+                  "Indonesia" = "Island\nSEA", "Thailand" = "Mainland\nSEA 2", 
+                  "no_group" = "No group")
+
+p=ggplot() +
+  geom_map(data = sea_map, map = sea_map,
+           aes(x = long, y = lat, map_id = region),
+           col = "black", fill = "#f0f0f0") +
+  theme(panel.grid = element_blank()) +
+  theme_classic() +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  geom_jitter(data = env_database,
+              aes(x = LON, y = LAT, color = K6),
+              width = 0, height = 0.0, size = 1.2) +
+  scale_color_manual(values = c("Bangladesh" = "#670149",
+                                "Cambodia"   = "#482878FF",
+                                "China"      = "#3E4A89FF",
+                                "Indonesia"  = "#1f78b4",
+                                "India"      = "#21908CFF",
+                                "Thailand"   = "#5DC863FF",
+                                "no_group"   =  "#e6ab02"),
+                     labels = group_labels)+
+  labs(color="K-medoid populations") 
+
++
+  scale_x_discrete(labels = group_labels)
+  
+ggsave("/Users/isabelbojanini/Desktop/GEAscripts/environmental-data/map.png", p, width = 9, height = 6, dpi = 600)
+print(p)
+>>>>>>> Stashed changes
 dev.off()
 ```
 
