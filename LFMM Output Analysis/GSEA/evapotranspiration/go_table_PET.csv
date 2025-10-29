@@ -1,0 +1,2 @@
+index,GO,NS,enrichment,name,ratio_in_study,ratio_in_pop,p_uncorrected,depth,study_count,p_fdr_bh,study_items,fold_enrichment
+0,GO:0016788,MF,e,"hydrolase activity, acting on ester bonds",0.0654205607,0.0023117865,6.4e-09,3,7,3.6074e-06,"LOC_Os01g11620, LOC_Os01g11650, LOC_Os01g11660, LOC_Os01g11700, LOC_Os01g11710, LOC_Os01g11730, LOC_Os01g11740",28.2987031805

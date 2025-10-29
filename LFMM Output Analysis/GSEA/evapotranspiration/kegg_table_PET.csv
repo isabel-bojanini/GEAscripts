@@ -1,0 +1,36 @@
+index,Gene_set,Term,Overlap,P-value,Adjusted P-value,Odds Ratio,Genes,Name,Gene List
+0,gs_ind_0,osa00030,1/57,0.042853030300000004,0.0774830422,34.6259094942,LOC4347508,Pentose phosphate pathway - Oryza sativa japonica (Japanese rice),LOC_Os09g32810
+1,gs_ind_0,osa00040,1/75,0.0560153117,0.0782496224,26.3561292066,LOC4347508,Pentose and glucuronate interconversions - Oryza sativa japonica (Japanese rice),LOC_Os09g32810
+2,gs_ind_0,osa00053,1/63,0.047259912,0.0774830422,31.3483850233,LOC4347499,Ascorbate and aldarate metabolism - Oryza sativa japonica (Japanese rice),LOC_Os09g32670
+3,gs_ind_0,osa00061,1/46,0.0347228726,0.0774830422,42.8314680711,LOC4347505,Fatty acid biosynthesis - Oryza sativa japonica (Japanese rice),LOC_Os09g32760
+4,gs_ind_0,osa00071,1/54,0.040642257800000005,0.0774830422,36.5352930163,LOC4327088,Fatty acid degradation - Oryza sativa japonica (Japanese rice),LOC_Os01g10830
+5,gs_ind_0,osa00230,2/95,0.002416604,0.030934543300000002,36.1830232817,LOC4327345;LOC4334073,Purine metabolism - Oryza sativa japonica (Japanese rice),LOC_Os01g10280;LOC_Os03g53230
+6,gs_ind_0,osa00240,1/64,0.047992496,0.0774830422,30.8614143332,LOC4347509,Pyrimidine metabolism - Oryza sativa japonica (Japanese rice),LOC_Os09g32820
+7,gs_ind_0,osa00261,1/12,0.0091720039,0.0642040276,159.4995918367,LOC4334073,Monobactam biosynthesis - Oryza sativa japonica (Japanese rice),LOC_Os03g53230
+8,gs_ind_0,osa00270,1/126,0.092371587,0.11148294980000001,15.7056545939,LOC4327097,Cysteine and methionine metabolism - Oryza sativa japonica (Japanese rice),LOC_Os01g10940
+9,gs_ind_0,osa00450,1/19,0.0144849863,0.0774830422,102.2213500785,LOC4334073,Selenocompound metabolism - Oryza sativa japonica (Japanese rice),LOC_Os03g53230
+10,gs_ind_0,osa00520,1/160,0.1158581803,0.1308076229,12.3656303643,LOC4347499,Amino sugar and nucleotide sugar metabolism - Oryza sativa japonica (Japanese rice),LOC_Os09g32670
+11,gs_ind_0,osa00592,2/58,0.0009103374,0.030934543300000002,59.1352973268,LOC4347491;LOC4347496,alpha-Linolenic acid metabolism - Oryza sativa japonica (Japanese rice),LOC_Os09g32570;LOC_Os09g32640
+12,gs_ind_0,osa00710,1/79,0.0589165748,0.0782496224,25.0269541779,LOC4347508,Carbon fixation by Calvin cycle - Oryza sativa japonica (Japanese rice),LOC_Os09g32810
+13,gs_ind_0,osa00908,1/30,0.0227787415,0.0774830422,65.3325526932,LOC4327333,Zeatin biosynthesis - Oryza sativa japonica (Japanese rice),LOC_Os01g10110
+14,gs_ind_0,osa00920,1/41,0.031005468600000002,0.0774830422,47.9992623555,LOC4334073,Sulfur metabolism - Oryza sativa japonica (Japanese rice),LOC_Os03g53230
+15,gs_ind_0,osa00940,1/205,0.1460476359,0.15973960180000002,9.6444212722,LOC4327090,Phenylpropanoid biosynthesis - Oryza sativa japonica (Japanese rice),LOC_Os01g10850
+16,gs_ind_0,osa00970,1/115,0.0846455817,0.1058069771,17.2072621256,LOC4347497,Aminoacyl-tRNA biosynthesis - Oryza sativa japonica (Japanese rice),LOC_Os09g32650
+17,gs_ind_0,osa00999,1/68,0.050917427800000005,0.0774830422,29.0557127961,LOC4327097,Biosynthesis of various plant secondary metabolites - Oryza sativa japonica (Japanese rice),LOC_Os01g10940
+18,gs_ind_0,osa03010,1/358,0.2414642445,0.2414642445,5.5022628298,LOC4327087,Ribosome - Oryza sativa japonica (Japanese rice),LOC_Os01g10820
+19,gs_ind_0,osa03030,1/43,0.0324940764,0.0774830422,45.789584799400004,LOC4327080,DNA replication - Oryza sativa japonica (Japanese rice),LOC_Os01g10690
+20,gs_ind_0,osa03050,1/68,0.050917427800000005,0.0774830422,29.0557127961,LOC4347507,Proteasome - Oryza sativa japonica (Japanese rice),LOC_Os09g32800
+21,gs_ind_0,osa03082,1/65,0.0487245391,0.0774830422,30.3893129771,LOC4334071,ATP-dependent chromatin remodeling - Oryza sativa japonica (Japanese rice),LOC_Os03g53190
+22,gs_ind_0,osa03083,1/77,0.0574670149,0.0782496224,25.6743910467,LOC4347503,Polycomb repressive complex - Oryza sativa japonica (Japanese rice),LOC_Os09g32740
+23,gs_ind_0,osa03410,1/50,0.0376869345,0.0774830422,39.4340270762,LOC4327080,Base excision repair - Oryza sativa japonica (Japanese rice),LOC_Os01g10690
+24,gs_ind_0,osa03420,1/81,0.060363994500000004,0.0782496224,24.4112933517,LOC4327080,Nucleotide excision repair - Oryza sativa japonica (Japanese rice),LOC_Os01g10690
+25,gs_ind_0,osa03430,1/29,0.0220275413,0.0774830422,67.5492909028,LOC4327080,Mismatch repair - Oryza sativa japonica (Japanese rice),LOC_Os01g10690
+26,gs_ind_0,osa03440,1/56,0.0421166501,0.0774830422,35.2398410692,LOC4327080,Homologous recombination - Oryza sativa japonica (Japanese rice),LOC_Os01g10690
+27,gs_ind_0,osa03450,1/9,0.0068866038,0.0602577835,209.8872180451,LOC4334058,Non-homologous end-joining - Oryza sativa japonica (Japanese rice),LOC_Os03g53000
+28,gs_ind_0,osa04016,1/159,0.1151758036,0.1308076229,12.44354168,LOC4334072,MAPK signaling pathway - plant - Oryza sativa japonica (Japanese rice),LOC_Os03g53200
+29,gs_ind_0,osa04070,1/68,0.050917427800000005,0.0774830422,29.0557127961,LOC4334072,Phosphatidylinositol signaling system - Oryza sativa japonica (Japanese rice),LOC_Os03g53200
+30,gs_ind_0,osa04075,3/364,0.0026515323,0.030934543300000002,13.7471422039,LOC4334072;LOC4334069;LOC4327089,Plant hormone signal transduction - Oryza sativa japonica (Japanese rice),LOC_Os03g53200;LOC_Os03g53150;LOC_Os01g10840
+31,gs_ind_0,osa04136,1/43,0.0324940764,0.0774830422,45.789584799400004,LOC4327346,Autophagy - other - Oryza sativa japonica (Japanese rice),LOC_Os01g10290
+32,gs_ind_0,osa04141,1/227,0.1604443076,0.1698282321,8.7058533303,LOC4334068,Protein processing in endoplasmic reticulum - Oryza sativa japonica (Japanese rice),LOC_Os03g53140
+33,gs_ind_0,osa04626,1/234,0.1649759969,0.1698282321,8.4441495148,LOC4334072,Plant-pathogen interaction - Oryza sativa japonica (Japanese rice),LOC_Os03g53200
+34,gs_ind_0,osa04712,1/42,0.0317500472,0.0774830422,46.8684273709,LOC9271430,Circadian rhythm - plant - Oryza sativa japonica (Japanese rice),LOC_Os01g10590

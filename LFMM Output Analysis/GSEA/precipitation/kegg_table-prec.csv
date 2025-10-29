@@ -1,0 +1,15 @@
+index,Gene_set,Term,Overlap,P-value,Adjusted P-value,Odds Ratio,Genes,Name,Gene List
+0,gs_ind_0,osa00020,1/59,0.016184725100000002,0.0272930761,96.4434008898,LOC4324176,Citrate cycle (TCA cycle) - Oryza sativa japonica (Japanese rice),LOC_Os01g46610
+1,gs_ind_0,osa00061,1/46,0.0126387387,0.0272930761,123.4554079696,LOC4324180,Fatty acid biosynthesis - Oryza sativa japonica (Japanese rice),LOC_Os01g46750
+2,gs_ind_0,osa00071,1/54,0.0148222261,0.0272930761,105.3076092822,LOC4324180,Fatty acid degradation - Oryza sativa japonica (Japanese rice),LOC_Os01g46750
+3,gs_ind_0,osa00240,1/64,0.0175455489,0.0272930761,88.9534883721,LOC4324172,Pyrimidine metabolism - Oryza sativa japonica (Japanese rice),LOC_Os01g46570
+4,gs_ind_0,osa00290,1/19,0.005237675000000001,0.0272930761,294.6380090498,LOC4325375,"Valine, leucine and isoleucine biosynthesis - Oryza sativa japonica (Japanese rice)",LOC_Os01g46380
+5,gs_ind_0,osa00480,1/114,0.0310620455,0.0395335125,50.0321089134,LOC4324176,Glutathione metabolism - Oryza sativa japonica (Japanese rice),LOC_Os01g46610
+6,gs_ind_0,osa00770,1/40,0.0109983013,0.0272930761,141.7712418301,LOC4325375,Pantothenate and CoA biosynthesis - Oryza sativa japonica (Japanese rice),LOC_Os01g46380
+7,gs_ind_0,osa00920,1/41,0.0112718757,0.0272930761,138.3508150248,LOC4326319,Sulfur metabolism - Oryza sativa japonica (Japanese rice),LOC_Os01g47690
+8,gs_ind_0,osa03015,1/114,0.0310620455,0.0395335125,50.0321089134,LOC4345502,mRNA surveillance pathway - Oryza sativa japonica (Japanese rice),LOC_Os08g30820
+9,gs_ind_0,osa04016,1/159,0.0430852966,0.0469716924,35.86667896,LOC4324182,MAPK signaling pathway - plant - Oryza sativa japonica (Japanese rice),LOC_Os01g46760
+10,gs_ind_0,osa04075,1/364,0.0961965755,0.0961965755,15.5954974582,LOC4324182,Plant hormone signal transduction - Oryza sativa japonica (Japanese rice),LOC_Os01g46760
+11,gs_ind_0,osa04144,1/161,0.0436165716,0.0469716924,35.4203241668,LOC4324174,Endocytosis - Oryza sativa japonica (Japanese rice),LOC_Os01g46580
+12,gs_ind_0,osa04146,2/90,0.0002683342,0.0037566786,119.6556169429,LOC4324180;LOC4324176,Peroxisome - Oryza sativa japonica (Japanese rice),LOC_Os01g46750;LOC_Os01g46610
+13,gs_ind_0,osa04148,1/51,0.014003921800000001,0.0272930761,111.452312964,LOC4326864,Efferocytosis - Oryza sativa japonica (Japanese rice),LOC_Os01g47650

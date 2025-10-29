@@ -1,0 +1,2 @@
+index,GO,NS,enrichment,name,ratio_in_study,ratio_in_pop,p_uncorrected,depth,study_count,p_fdr_bh,study_items,fold_enrichment
+0,GO:0048544,BP,e,recognition of pollen,0.0845070423,0.00195337,6.2e-09,3,6,2.8278000000000003e-06,"LOC_Os01g47810, LOC_Os01g47820, LOC_Os01g47840, LOC_Os01g47900, LOC_Os01g48000, LOC_Os01g48020",43.262178576
